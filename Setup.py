@@ -14,8 +14,8 @@ class Setup:
     Needs to be passed the max polynomial degree of the QAP,
     to calculate enough powers of tau
     """
-    def __get_srs(self, poly_degree, generator):
-        return [multiply(generator, self.tau**i) for i in range(poly_degree,-1,-1)]
+    def __get_srs(self, poly_degree, generator, tau):
+        return [multiply(generator, tau**i) for i in range(poly_degree,-1,-1)]
 
     """
     Takes the R1CS as a QAP (2d array of coefficients) and the witness
@@ -24,22 +24,35 @@ class Setup:
         1. Take individual taus from prover and verifier and construct the srs' with them
         2. 
     """
-    def __init__(self, qap: np.array[np.array[int]], witness: np.array[int]):
-        poly_degree = len(qap[0]) - 1
+    def __init__(
+        self,
+        out_poly: np.array[np.array[int]], # polynomials of the output side of the qap
+        left_poly: np.array[np.array[int]], # polynomials of the left factor of the qap
+        right_poly: np.array[np.array[int]], # polynomial of the right factor of the qap
+        witness: np.array[int]
+    ):
+        ### to be kept private
+        # for powers of tau
+        tau = self.__get_random_scalar()
 
-        self.g1_srs = self.__get_srs(poly_degree, G1)
-        self.g2_srs = self.__get_srs(poly_degree, G2)
+        # random scalars to be kept secret from the prover
+        alpha = self.__get_random_scalar()
+        beta = self.__get_random_scalar()
 
-    # for powers of tau
-    tau = __get_random_scalar()
+        # divisors for the public and the private parts of the witness
+        gamma = self.__get_random_scalar()
+        delta = self.__get_random_scalar()
+        ###
 
-    # random scalars to be kept secret from the prover
-    alpha = __get_random_scalar()
-    beta = __get_random_scalar()
+        poly_degree = len(out_poly[0])
 
-    # divisors for the public and the private parts of the witness
-    gamma = __get_random_scalar()
-    delta = __get_random_scalar()
+        self.g1_srs = self.__get_srs(poly_degree, G1, tau)
+        self.g2_srs = self.__get_srs(poly_degree, G2, tau)
+
+        self.alpa_g1 = multiply(alpha, G1)
+        self.beta_g1 = multiply(beta, G1)
+        self.beta_g2 = multiply(beta, G2)
+
 
     # auxilary polynomial (t(x) = (x-1)(x-2)...(x-n))
     t = np.array()
