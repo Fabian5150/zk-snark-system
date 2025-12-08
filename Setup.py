@@ -17,6 +17,19 @@ class Setup:
     def __get_srs(self, poly_degree, generator):
         return [multiply(generator, self.tau**i) for i in range(poly_degree,-1,-1)]
 
+    """
+    Takes the R1CS as a QAP (2d array of coefficients) and the witness
+    to construct the trusted setup
+    TODO: 
+        1. Take individual taus from prover and verifier and construct the srs' with them
+        2. 
+    """
+    def __init__(self, qap: np.array[np.array[int]], witness: np.array[int]):
+        poly_degree = len(qap[0]) - 1
+
+        self.g1_srs = self.__get_srs(poly_degree, G1)
+        self.g2_srs = self.__get_srs(poly_degree, G2)
+
     # for powers of tau
     tau = __get_random_scalar()
 
@@ -28,4 +41,5 @@ class Setup:
     gamma = __get_random_scalar()
     delta = __get_random_scalar()
 
-    
+    # auxilary polynomial (t(x) = (x-1)(x-2)...(x-n))
+    t = np.array()
