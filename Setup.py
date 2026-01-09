@@ -14,13 +14,13 @@ class Setup:
     """
     def __init__(
         self,
-        out_poly: np.ndarray, # polynomials of the output side of the qap
-        left_poly: np.ndarray, # polynomials of the left factor of the qap
-        right_poly: np.ndarray, # polynomial of the right factor of the qap
+        out_polys: np.ndarray, # polynomials of the output side of the qap
+        left_polys: np.ndarray, # polynomials of the left factor of the qap
+        right_polys: np.ndarray, # polynomials of the right factor of the qap
     ):
-        self.out_poly = out_poly
-        self.left_poly = left_poly
-        self.right_poly = right_poly
+        self.out_polys = out_polys
+        self.left_polys = left_polys
+        self.right_polys = right_polys
         
         ### to be kept private
         # for powers of tau
@@ -32,7 +32,7 @@ class Setup:
         self.beta = self.__get_random_scalar()
         ###
 
-        self.poly_degree = len(self.out_poly[0])
+        self.poly_degree = len(self.out_polys[0])
 
         self.g1_srs = self.__get_srs(self.poly_degree + 1, G1)
         self.g2_srs = self.__get_srs(self.poly_degree + 1, G2)
@@ -80,9 +80,9 @@ class Setup:
         out_eval = []
 
         for i in range(self.poly_degree):
-            val_L = int(np.polyval(self.left_poly[i], self.tau)) % curve_order
-            val_R = int(np.polyval(self.right_poly[i], self.tau)) % curve_order
-            val_O = int(np.polyval(self.out_poly[i], self.tau)) % curve_order
+            val_L = int(np.polyval(self.left_polys[i], self.tau)) % curve_order
+            val_R = int(np.polyval(self.right_polys[i], self.tau)) % curve_order
+            val_O = int(np.polyval(self.out_polys[i], self.tau)) % curve_order
 
             left_eval.append(val_L)
             right_eval.append(val_R)
