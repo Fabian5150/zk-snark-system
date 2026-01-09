@@ -10,8 +10,7 @@ class Setup:
     """
     Takes the R1CS as a already interpolated QAP (2d array of coefficients)
     to construct the trusted setup
-    Polynomials of QAP must be given row-wise,
-    with coefficients of higher powers first
+    Polynomials of QAP must be given with coefficients of higher powers first
     """
     def __init__(
         self,
@@ -99,6 +98,20 @@ class Setup:
                 for i in range(self.poly_degree
             )
         ]
+
+    """
+    Returns the necesarry parts of the setup for prover and verifier as dict
+    """
+    def get_setup(self):
+        return {
+            "alpha_g1": self.alpha_g1,
+            "beta_g1": self.beta_g1,
+            "beta_g2": self.beta_g2,
+            "g1_srs": self.g1_srs,
+            "g2_srs": self.g2_srs,
+            "t_tau_srs": self.t_tau_srs,
+            "psis": self.psis,
+        }
 
 
     """
