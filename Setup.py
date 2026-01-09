@@ -21,7 +21,7 @@ class Setup:
     """
     def __get_srs(self, generator):
         return [
-            multiply(generator, int(self.tau**i))
+            multiply(generator, self.tau**i)
             for i in range(self.poly_degree,-1,-1)
         ]
 
@@ -29,11 +29,15 @@ class Setup:
     Calculates t(tau) for the auxilary polynomial t(x) = (x-1)(x-2)...(x-n)
     and returns the srs for it
     """
-    def __build_aux_poly(self, tau, poly_degree):
-        t_xs = self.GF(np.arange(1,poly_degree+1))
-        self.t_tau = np.prod([(self.tau-i) % curve_order for i in t_xs]) % curve_order
-        
-        self.t_tau_srs = self.__get_srs(poly_degree)
+    def __build_aux_poly(self):
+        t_xs = self.GF(np.arange(1, self.poly_degree + 1))
+        tau_GF = self.GF(self.tau)
+        t_tau_GF = np.prod(tau_GF - t_xs)
+
+        return [
+            multiply(G1, int((tau_GF**i) * t_tau_GF))
+            for i in range(self.poly_degree - 3, -1, -1)
+        ]
 
     """
     Takes the R1CS as a already interpolated QAP (2d array of coefficients)
@@ -62,3 +66,5 @@ class Setup:
         self.alpha_g1 = multiply(G1, self.alpha)
         self.beta_g1 = multiply(G1, self.beta)
         self.beta_g2 = multiply(G2, self.beta)
+
+        self.t_tau_srs = self.__build_aux_poly()
