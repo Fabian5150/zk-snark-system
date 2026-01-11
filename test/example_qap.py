@@ -1,8 +1,9 @@
 import numpy as np
 import galois
+#from py_ecc.bn128 import curve_order
 
-# Creates a simple interpolated QAP for testing purposes
-# Code taken mostly from https://rareskills.io/post/r1cs-to-qap
+# Creates a simple interpolated QAP with correct and incorrect withnesses for testing purposes
+# Example taken from https://rareskills.io/post/r1cs-to-qap
 
 # arithmetic circuit example:
 # z=x^4-5y^2x^2$, as R1CS:
@@ -13,12 +14,14 @@ import galois
 
 # --- R1CS ----
 
+curve_order = 79
+
 # mask matrices for output, left and right side
 # for witness vector of form: 1, out, x, y, v1, v2, v3
 L = np.array([
     [0, 0, 1, 0, 0, 0, 0],
     [0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, -5, 0, 0, 0],
+    [0, 0, 0, curve_order-5, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 1],
 ])
 
@@ -33,48 +36,44 @@ O = np.array([
     [0, 0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 0, 1, 0],
     [0, 0, 0, 0, 0, 0, 1],
-    [0, 1, 0, 0, 0, -1, 0],
+    [0, 1, 0, 0, 0, curve_order-1, 0],
 ])
 
-# valid example witness:
-x = 4
-y = -2
-v1 = x * x
-v2 = v1 * v1
-v3 = -5 * y * y
-z = v3 * v1 + v2
+GF = galois.GF(curve_order)
 
-a = np.array([1, z, x, y, v1, v2, v3])
-
-assert all(np.equal(
-    (np.matmul(L, a) * np.matmul(R, a)),
-    np.matmul(O, a)
-))
-
-GF = galois.GF(79)
-
-L = (L + 79) % 79
-R = (R + 79) % 79
-O = (O + 79) % 79
-
+'''
+L_galois = GF(np.where(L >= 0, L, curve_order - L))
+R_galois = GF(np.where(R >= 0, R, curve_order - R))
+O_galois = GF(np.where(O >= 0, O, curve_order - O))
+'''
 L_galois = GF(L)
 R_galois = GF(R)
 O_galois = GF(O)
 
+
+
 x = GF(4)
-y = GF(-2 + 79) # we are using 79 as the field size, so 79 - 2 is -2
+y = GF(curve_order-2)
 v1 = x * x
 v2 = v1 * v1         # x^4
-v3 = GF(-5 + 79)*y * y
+v3 = GF(curve_order-5)*y * y
 out = v3*v1 + v2    # -5y^2 * x^2
 
 
 witness = GF(np.array([1, out, x, y, v1, v2, v3]))
+false_witness = GF(np.array([1, 1, 0, 0, 0, 0, 0]))
 
 assert all(np.equal(
     np.matmul(L_galois, witness) * np.matmul(R_galois, witness),
     np.matmul(O_galois, witness)
 )), "not equal"
+
+'''
+assert all(np.not_equal(
+    np.matmul(L_galois, witness) * np.matmul(R_galois, witness),
+    np.matmul(O_galois, witness)
+)), "equal, but should not"
+'''
 
 # --- QAP ---
 # as the r1cs above has 4 equations the x values for points
@@ -103,5 +102,8 @@ def get_test_qap():
         "out_polys": W_polys,
         "left_polys": U_polys,
         "right_polys": V_polys,
-        "correct_witness": witness
+        "correct_witness": witness,
+        "false_witness": false_witness
     }
+
+print(get_test_qap())
