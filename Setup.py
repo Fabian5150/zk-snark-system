@@ -34,8 +34,8 @@ class Setup:
 
         self.poly_degree = len(self.out_polys[0])
 
-        self.g1_srs = self.__get_srs(self.poly_degree + 1, G1)
-        self.g2_srs = self.__get_srs(self.poly_degree + 1, G2)
+        self.g1_srs = self.__get_srs(G1)
+        self.g2_srs = self.__get_srs(G2)
 
         self.alpha_g1 = multiply(G1, self.alpha)
         self.beta_g1 = multiply(G1, self.beta)
@@ -43,7 +43,6 @@ class Setup:
 
         self.t_tau_srs = self.__build_aux_poly()
         self.psis = self.__evaluate_qap_polys()
-    
 
     """
     Calulates the structure reference string; powers of tau in a elliptic curve group
@@ -53,7 +52,7 @@ class Setup:
     def __get_srs(self, generator):
         return [
             multiply(generator, self.tau**i)
-            for i in range(self.poly_degree,-1,-1)
+            for i in range(self.poly_degree - 1,-1,-1)
         ]
 
     """
@@ -66,7 +65,7 @@ class Setup:
 
         return [
             multiply(G1, int((self.tau_GF**i) * t_tau_GF))
-            for i in range(self.poly_degree - 3, -1, -1)
+            for i in range(self.poly_degree - 2, -1, -1)
         ]
 
     """

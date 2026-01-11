@@ -10,4 +10,3 @@ GF = galois.GF(curve_order)
 with open(project_path("test", "qap_data.pkl"), "rb") as f:
     data = pickle.load(f)
 
-print(data)
