@@ -1,7 +1,8 @@
 import numpy as np
 import galois
-#from py_ecc.bn128 import curve_order
+from py_ecc.bn128 import curve_order
 import pickle
+from utils import project_path
 
 # Creates a simple interpolated QAP with correct and incorrect withnesses for testing purposes
 # Example taken from https://rareskills.io/post/r1cs-to-qap
@@ -14,8 +15,6 @@ import pickle
 # -v_2 + z = v_3 * v_1$ (=> $-5y^2*x^2$)
 
 # --- R1CS ----
-
-curve_order = 79
 
 # mask matrices for output, left and right side
 # for witness vector of form: 1, out, x, y, v1, v2, v3
@@ -99,7 +98,7 @@ def get_test_qap():
     }
 
 # as computation takes quite a bit of time, let's just do it once and export the results
-with open("test/qap_data.pkl", "wb") as f:
+with open(project_path("test", "qap_data.pkl"), "wb") as f:
     pickle.dump({
         "out_polys": W_polys,
         "left_polys": U_polys,
