@@ -1,6 +1,7 @@
 import numpy as np
 import galois
 #from py_ecc.bn128 import curve_order
+import pickle
 
 # Creates a simple interpolated QAP with correct and incorrect withnesses for testing purposes
 # Example taken from https://rareskills.io/post/r1cs-to-qap
@@ -21,7 +22,7 @@ curve_order = 79
 L = np.array([
     [0, 0, 1, 0, 0, 0, 0],
     [0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, curve_order-5, 0, 0, 0],
+    [0, 0, 0, curve_order-5, 0, 0, 0], # to get the additive inverse, negatives must be substracted from the field order
     [0, 0, 0, 0, 0, 0, 1],
 ])
 
@@ -41,16 +42,9 @@ O = np.array([
 
 GF = galois.GF(curve_order)
 
-'''
-L_galois = GF(np.where(L >= 0, L, curve_order - L))
-R_galois = GF(np.where(R >= 0, R, curve_order - R))
-O_galois = GF(np.where(O >= 0, O, curve_order - O))
-'''
 L_galois = GF(L)
 R_galois = GF(R)
 O_galois = GF(O)
-
-
 
 x = GF(4)
 y = GF(curve_order-2)
@@ -61,19 +55,18 @@ out = v3*v1 + v2    # -5y^2 * x^2
 
 
 witness = GF(np.array([1, out, x, y, v1, v2, v3]))
-false_witness = GF(np.array([1, 1, 0, 0, 0, 0, 0]))
+false_witness = GF(np.array([2,2,2,2,2,2,2]))
 
 assert all(np.equal(
     np.matmul(L_galois, witness) * np.matmul(R_galois, witness),
     np.matmul(O_galois, witness)
 )), "not equal"
 
-'''
 assert all(np.not_equal(
-    np.matmul(L_galois, witness) * np.matmul(R_galois, witness),
-    np.matmul(O_galois, witness)
+    np.matmul(L_galois, false_witness) * np.matmul(R_galois, false_witness),
+    np.matmul(O_galois, false_witness)
 )), "equal, but should not"
-'''
+
 
 # --- QAP ---
 # as the r1cs above has 4 equations the x values for points
@@ -106,4 +99,12 @@ def get_test_qap():
         "false_witness": false_witness
     }
 
-print(get_test_qap())
+# as computation takes quite a bit of time, let's just do it once and export the results
+with open("qap_data.pkl", "wb") as f:
+    pickle.dump({
+        "out_polys": W_polys,
+        "left_polys": U_polys,
+        "right_polys": V_polys,
+        "correct_witness": witness,
+        "false_witness": false_witness
+    }, f)
