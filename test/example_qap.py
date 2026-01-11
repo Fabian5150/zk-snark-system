@@ -53,7 +53,6 @@ v2 = v1 * v1         # x^4
 v3 = GF(curve_order-5)*y * y
 out = v3*v1 + v2    # -5y^2 * x^2
 
-
 witness = GF(np.array([1, out, x, y, v1, v2, v3]))
 false_witness = GF(np.array([2,2,2,2,2,2,2]))
 
@@ -100,7 +99,7 @@ def get_test_qap():
     }
 
 # as computation takes quite a bit of time, let's just do it once and export the results
-with open("qap_data.pkl", "wb") as f:
+with open("test/qap_data.pkl", "wb") as f:
     pickle.dump({
         "out_polys": W_polys,
         "left_polys": U_polys,
