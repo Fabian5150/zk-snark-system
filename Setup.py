@@ -112,7 +112,6 @@ class Setup:
             "psis": self.psis,
         }
 
-
     """
     Returns a random interger between zero and the G1/G2-curve order (exclusive)
     """
