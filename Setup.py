@@ -38,11 +38,11 @@ class Setup:
         self.g2_srs = self.__get_srs(G2)
 
         self.alpha_g1 = multiply(G1, self.alpha)
-        self.beta_g1 = multiply(G1, self.beta)
         self.beta_g2 = multiply(G2, self.beta)
 
+        self.left_eval, self.right_eval, self.out_eval = self.__evaluate_qap_polys()
         self.t_tau_srs = self.__build_aux_poly()
-        self.psis = self.__evaluate_qap_polys()
+        self.psis = self.__evaluate_qap_psis()
 
     """
     Calulates the structure reference string; powers of tau in a elliptic curve group
@@ -69,9 +69,7 @@ class Setup:
         ]
 
     """
-    Evaluates the QAP's polynomials at tau and constructs
-    their linear combination as corresponding G1 curve point row wise
-    G1(alpha * left_poly_i(tau) + beta * left_poly_i(tau) + out_poly_i(tau))
+    Evaluates the qap polynomials at tau
     """
     def __evaluate_qap_polys(self):
         left_eval = []
@@ -87,15 +85,24 @@ class Setup:
             right_eval.append(val_R)
             out_eval.append(val_O)
 
-        
+        return left_eval, right_eval, out_eval
+
+
+    """
+    Evaluates the QAP's polynomials at tau and constructs
+    their linear combination as corresponding G1 curve point row wise
+    G1(alpha * left_poly_i(tau) + beta * left_poly_i(tau) + out_poly_i(tau))
+    """
+    def __evaluate_qap_psis(self, left_eval, right_eval, out_eval):
         return [
             multiply(
                 G1,
                 (self.alpha * right_eval[i] +
                 self.beta  * left_eval[i] +
                 out_eval[i]) % curve_order)
-                for i in range(self.poly_degree
-            )
+                for i in range(
+                    self.poly_degree
+                )
         ]
 
     """
@@ -104,12 +111,14 @@ class Setup:
     def get_setup(self):
         return {
             "alpha_g1": self.alpha_g1,
-            "beta_g1": self.beta_g1,
             "beta_g2": self.beta_g2,
             "g1_srs": self.g1_srs,
             "g2_srs": self.g2_srs,
             "t_tau_srs": self.t_tau_srs,
             "psis": self.psis,
+            "left_eval": self.left_eval,
+            "right_eval": self.right_eval,
+            "out_eval": self.out_eval
         }
 
     """
