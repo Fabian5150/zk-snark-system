@@ -77,3 +77,14 @@ class Prover:
         C_1 = add(psi_sum_point, aux_term)
 
         return C_1
+    
+    """
+    Returns the three curve points making up the proof
+    """
+    def get_proof(self):
+        return {
+            "A": self.A_1,
+            "B": self.B_2,
+            "C": self.C_1
+        }
+
