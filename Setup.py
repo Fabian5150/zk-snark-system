@@ -79,12 +79,14 @@ class Setup:
         psis = []
         
         for i in range(self.num_polys):
-            # Horner's polynomial evaluation algorithms with modular arithmetic
-            def poly_eval_mod(coeffs, x, mod):
-                result = 0
+            # Horner's polynomial evaluation algorithm with modular arithmetic
+            def poly_eval_mod(poly_obj, x, mod):
+                # Handle both galois.Poly objects and regular arrays
+                coeffs = poly_obj.coeffs if hasattr(poly_obj, 'coeffs') else poly_obj # => accepts both galois poly objects and np coeff arrays
+                res = 0
                 for coeff in coeffs:
-                    result = (result * x + int(coeff)) % mod
-                return result
+                    res = (res * x + int(coeff)) % mod
+                return res
             
             val_left = poly_eval_mod(self.left_polys[i], self.tau, curve_order)
             val_right = poly_eval_mod(self.right_polys[i], self.tau, curve_order)
