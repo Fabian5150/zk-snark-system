@@ -18,6 +18,7 @@ class Setup:
         left_polys: np.ndarray, # polynomials of the left factor of the qap
         right_polys: np.ndarray, # polynomials of the right factor of the qap
     ):
+        print("hello")
         self.out_polys = out_polys
         self.left_polys = left_polys
         self.right_polys = right_polys
@@ -32,7 +33,8 @@ class Setup:
         self.beta = self.__get_random_scalar()
         ###
 
-        self.poly_degree = len(self.out_polys[0])
+        self.num_polys = len(self.out_polys)
+        self.num_constraints = len(self.out_polys[0])
 
         self.g1_srs = self.__get_srs(G1)
         self.g2_srs = self.__get_srs(G2)
@@ -52,7 +54,7 @@ class Setup:
     def __get_srs(self, generator):
         return [
             multiply(generator, self.tau**i)
-            for i in range(self.poly_degree - 1,-1,-1)
+            for i in range(self.num_constraints - 1,-1,-1)
         ]
 
     """
@@ -60,12 +62,12 @@ class Setup:
     and returns the srs for it
     """
     def __build_aux_poly(self):
-        t_xs = self.GF(np.arange(1, self.poly_degree + 1))
+        t_xs = self.GF(np.arange(1, self.num_constraints + 1))
         t_tau_GF = np.prod(self.tau_GF - t_xs)
 
         return [
             multiply(G1, int((self.tau_GF**i) * t_tau_GF))
-            for i in range(self.poly_degree - 2, -1, -1)
+            for i in range(self.num_constraints - 2, -1, -1)
         ]
 
     """
@@ -74,29 +76,30 @@ class Setup:
     G1(alpha * left_poly_i(tau) + beta * left_poly_i(tau) + out_poly_i(tau))
     """
     def __evaluate_qap_polys(self):
-        left_eval = []
-        right_eval = []
-        out_eval = []
-
-        for i in range(self.poly_degree):
-            val_L = int(np.polyval(self.left_polys[i], self.tau)) % curve_order
-            val_R = int(np.polyval(self.right_polys[i], self.tau)) % curve_order
-            val_O = int(np.polyval(self.out_polys[i], self.tau)) % curve_order
-
-            left_eval.append(val_L)
-            right_eval.append(val_R)
-            out_eval.append(val_O)
-
+        psis = []
         
-        return [
-            multiply(
-                G1,
-                (self.alpha * right_eval[i] +
-                self.beta  * left_eval[i] +
-                out_eval[i]) % curve_order)
-                for i in range(self.poly_degree
-            )
-        ]
+        for i in range(self.num_polys):
+            # Horner's polynomial evaluation algorithms with modular arithmetic
+            def poly_eval_mod(coeffs, x, mod):
+                result = 0
+                for coeff in coeffs:
+                    result = (result * x + int(coeff)) % mod
+                return result
+            
+            val_left = poly_eval_mod(self.left_polys[i], self.tau, curve_order)
+            val_right = poly_eval_mod(self.right_polys[i], self.tau, curve_order)
+            val_out = poly_eval_mod(self.out_polys[i], self.tau, curve_order)
+            
+            # Psi_i = (alph*v_i(tau) + beta*u_i(tau) + w_i(tau))G_1
+            combined = (
+                self.alpha * val_right +
+                self.beta * val_left +
+                val_out
+            ) % curve_order
+            
+            psis.append(multiply(G1, combined))
+        
+        return psis
 
     """
     Returns the necesarry parts of the setup for prover and verifier as dict
@@ -118,3 +121,20 @@ class Setup:
     @staticmethod
     def __get_random_scalar():
         return random.randint(1, curve_order - 1) # Must not be 0
+    
+if __name__ == "__main__":
+    print("Small internal test")
+
+    import numpy as np
+
+    # Dummy-QAP
+    left_polys = np.array([[1, 2], [3, 4]])
+    right_polys = np.array([[5, 6], [7, 8]])
+    out_polys = np.array([[9, 10], [11, 12]])
+
+    setup = Setup(out_polys=out_polys,
+                left_polys=left_polys,
+                right_polys=right_polys)
+
+    print("Trusted setup created!")
+    print(setup.get_setup())
