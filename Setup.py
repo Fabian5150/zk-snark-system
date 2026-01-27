@@ -16,21 +16,24 @@ class Setup:
         self,
         out_polys: np.ndarray, # polynomials of the output side of the qap
         left_polys: np.ndarray, # polynomials of the left factor of the qap
-        right_polys: np.ndarray, # polynomials of the right factor of the qap
+        right_polys: np.ndarray, # polynomials of the right factor of the qap,
+        tau=None, # for determinstic tesing
+        alpha=None, # for determinstic tesing
+        beta=None # for determinstic tesing
     ):
-        print("hello")
         self.out_polys = out_polys
         self.left_polys = left_polys
         self.right_polys = right_polys
         
         ### to be kept private
         # for powers of tau
-        self.tau = self.__get_random_scalar()
+        
+        self.tau = tau if tau is not None else self.__get_random_scalar()
         self.tau_GF = self.GF(self.tau)
 
         # for multiplication with the QAP matrices
-        self.alpha = self.__get_random_scalar()
-        self.beta = self.__get_random_scalar()
+        self.alpha = alpha if alpha is not None else self.__get_random_scalar()
+        self.beta = beta if beta is not None else self.__get_random_scalar()
         ###
 
         self.num_polys = len(self.out_polys)
