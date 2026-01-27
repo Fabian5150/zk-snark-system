@@ -37,7 +37,7 @@ class Setup:
         ###
 
         self.num_polys = len(self.out_polys)
-        self.num_constraints = len(self.out_polys[0])
+        self.num_constraints = len(self.out_polys[0].coeffs)
 
         self.g1_srs = self.__get_srs(G1)
         self.g2_srs = self.__get_srs(G2)
@@ -56,7 +56,7 @@ class Setup:
     """
     def __get_srs(self, generator):
         return [
-            multiply(generator, self.tau**i)
+            multiply(generator, int(pow(self.tau, i, curve_order)))
             for i in range(self.num_constraints - 1,-1,-1)
         ]
 
