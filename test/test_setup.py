@@ -92,10 +92,10 @@ class TestSetup(unittest.TestCase):
         expected_last = multiply(G1, int(t_tau))
         self.assertEqual(self.setup.t_tau_srs[-1], expected_last)
         
-        expected = multiply(G1, int((tau_gf * t_tau) % curve_order))
+        expected = multiply(G1, int(tau_gf * t_tau) % curve_order)
         self.assertEqual(self.setup.t_tau_srs[-2], expected)
         
-        expected = multiply(G1, int((tau_gf**2 * t_tau) % curve_order))
+        expected = multiply(G1, int(tau_gf**2 * t_tau) % curve_order)
         self.assertEqual(self.setup.t_tau_srs[0], expected)
     
     def test_07_psi_computation_first_element(self):
@@ -121,9 +121,9 @@ class TestSetup(unittest.TestCase):
         v_poly = self.data["right_polys"][i]
         w_poly = self.data["out_polys"][i]
         
-        u_tau = int(np.polyval(u_poly.coeffs, self.tau)) % curve_order
-        v_tau = int(np.polyval(v_poly.coeffs, self.tau)) % curve_order
-        w_tau = int(np.polyval(w_poly.coeffs, self.tau)) % curve_order
+        u_tau = self.poly_eval_mod(u_poly, self.tau, curve_order)
+        v_tau = self.poly_eval_mod(v_poly, self.tau, curve_order)
+        w_tau = self.poly_eval_mod(w_poly, self.tau, curve_order)
         
         psi_scalar = (self.alpha * v_tau + self.beta * u_tau + w_tau) % curve_order
         expected_psi = multiply(G1, psi_scalar)
@@ -154,11 +154,11 @@ class TestSetup(unittest.TestCase):
         witness = self.data["correct_witness"]
         
         for constraint_x in [1, 2, 3, 4]:
-            u_vals = [int(np.polyval(poly, constraint_x)) % curve_order 
+            u_vals = [self.poly_eval_mod(poly, constraint_x, curve_order)
                      for poly in self.data["left_polys"]]
-            v_vals = [int(np.polyval(poly, constraint_x)) % curve_order 
+            v_vals = [self.poly_eval_mod(poly, constraint_x, curve_order)
                      for poly in self.data["right_polys"]]
-            w_vals = [int(np.polyval(poly, constraint_x)) % curve_order 
+            w_vals = [self.poly_eval_mod(poly, constraint_x, curve_order)
                      for poly in self.data["out_polys"]]
             
             left = sum(int(witness[i]) * u_vals[i] for i in range(7)) % curve_order
@@ -177,6 +177,15 @@ class TestSetup(unittest.TestCase):
         
         for key in required_keys:
             self.assertIn(key, setup_output)
+
+    # Horner's method for polynomial evaluation with modular arithmetic
+    @staticmethod
+    def poly_eval_mod(poly_obj, x, mod):
+        coeffs = poly_obj.coeffs if hasattr(poly_obj, 'coeffs') else poly_obj
+        res = 0
+        for coeff in coeffs:
+            res = (res * x + int(coeff)) % mod
+        return res
 
 
 def run_tests():
