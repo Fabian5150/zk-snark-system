@@ -105,9 +105,9 @@ class TestSetup(unittest.TestCase):
         v_poly = self.data["right_polys"][i]
         w_poly = self.data["out_polys"][i]
         
-        u_tau = int(np.polyval(u_poly, self.tau)) % curve_order
-        v_tau = int(np.polyval(v_poly, self.tau)) % curve_order
-        w_tau = int(np.polyval(w_poly, self.tau)) % curve_order
+        u_tau = int(np.polyval(u_poly.coeffs, self.tau)) % curve_order
+        v_tau = int(np.polyval(v_poly.coeffs, self.tau)) % curve_order
+        w_tau = int(np.polyval(w_poly.coeffs, self.tau)) % curve_order
         
         psi_scalar = (self.alpha * v_tau + self.beta * u_tau + w_tau) % curve_order
         expected_psi = multiply(G1, psi_scalar)
@@ -121,9 +121,9 @@ class TestSetup(unittest.TestCase):
         v_poly = self.data["right_polys"][i]
         w_poly = self.data["out_polys"][i]
         
-        u_tau = int(np.polyval(u_poly, self.tau)) % curve_order
-        v_tau = int(np.polyval(v_poly, self.tau)) % curve_order
-        w_tau = int(np.polyval(w_poly, self.tau)) % curve_order
+        u_tau = int(np.polyval(u_poly.coeffs, self.tau)) % curve_order
+        v_tau = int(np.polyval(v_poly.coeffs, self.tau)) % curve_order
+        w_tau = int(np.polyval(w_poly.coeffs, self.tau)) % curve_order
         
         psi_scalar = (self.alpha * v_tau + self.beta * u_tau + w_tau) % curve_order
         expected_psi = multiply(G1, psi_scalar)

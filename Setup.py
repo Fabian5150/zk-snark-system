@@ -37,7 +37,17 @@ class Setup:
         ###
 
         self.num_polys = len(self.out_polys)
-        self.num_constraints = len(self.out_polys[0].coeffs)
+        
+        # as galois removes zero-coefficients in their poly type,
+        # we must go through all of them to find the maximal degree
+        max_coeff = 1
+        for poly_array in [self.out_polys, self.left_polys, self.right_polys]:
+            for poly in poly_array:
+                max_coeff = max(max_coeff, len(poly.coeffs))
+        
+        self.num_constraints = max_coeff
+        self.poly_degree = self.num_constraints - 1
+
 
         self.g1_srs = self.__get_srs(G1)
         self.g2_srs = self.__get_srs(G2)
@@ -126,20 +136,3 @@ class Setup:
     @staticmethod
     def __get_random_scalar():
         return random.randint(1, curve_order - 1) # Must not be 0
-    
-if __name__ == "__main__":
-    print("Small internal test")
-
-    import numpy as np
-
-    # Dummy-QAP
-    left_polys = np.array([[1, 2], [3, 4]])
-    right_polys = np.array([[5, 6], [7, 8]])
-    out_polys = np.array([[9, 10], [11, 12]])
-
-    setup = Setup(out_polys=out_polys,
-                left_polys=left_polys,
-                right_polys=right_polys)
-
-    print("Trusted setup created!")
-    print(setup.get_setup())
