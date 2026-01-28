@@ -53,11 +53,11 @@ class Setup:
         self.g2_srs = self.__get_srs(G2)
 
         self.alpha_g1 = multiply(G1, self.alpha)
+        self.beta_g1 = multiply(G1, self.beta)
         self.beta_g2 = multiply(G2, self.beta)
 
-        self.left_eval, self.right_eval, self.out_eval = self.__evaluate_qap_polys()
         self.t_tau_srs = self.__build_aux_poly()
-        self.psis = self.__evaluate_qap_psis()
+        self.psis = self.__evaluate_qap_polys()
 
     """
     Calulates the structure reference string; powers of tau in a elliptic curve group
@@ -84,24 +84,19 @@ class Setup:
         ]
 
     """
-    Evaluates the qap polynomials at tau
+    Evaluates the QAP's polynomials at tau and constructs
+    their linear combination as corresponding G1 curve point row wise
+    G1(alpha * left_poly_i(tau) + beta * left_poly_i(tau) + out_poly_i(tau))
     """
     def __evaluate_qap_polys(self):
         psis = []
         
         for i in range(self.num_polys):
-            # Horner's polynomial evaluation algorithm with modular arithmetic
-            def poly_eval_mod(poly_obj, x, mod):
-                # Handle both galois.Poly objects and regular arrays
-                coeffs = poly_obj.coeffs if hasattr(poly_obj, 'coeffs') else poly_obj # => accepts both galois poly objects and np coeff arrays
-                res = 0
-                for coeff in coeffs:
-                    res = (res * x + int(coeff)) % mod
-                return res
             
-            val_left = poly_eval_mod(self.left_polys[i], self.tau, curve_order)
-            val_right = poly_eval_mod(self.right_polys[i], self.tau, curve_order)
-            val_out = poly_eval_mod(self.out_polys[i], self.tau, curve_order)
+            
+            val_left = self.__poly_eval_mod(self.left_polys[i], self.tau, curve_order)
+            val_right = self.__poly_eval_mod(self.right_polys[i], self.tau, curve_order)
+            val_out = self.__poly_eval_mod(self.out_polys[i], self.tau, curve_order)
             
             # Psi_i = (alph*v_i(tau) + beta*u_i(tau) + w_i(tau))G_1
             combined = (
@@ -120,16 +115,25 @@ class Setup:
     def get_setup(self):
         return {
             "alpha_g1": self.alpha_g1,
+            "beta_g1": self.beta_g1,
             "beta_g2": self.beta_g2,
             "g1_srs": self.g1_srs,
             "g2_srs": self.g2_srs,
             "t_tau_srs": self.t_tau_srs,
             "psis": self.psis,
-            "left_eval": self.left_eval,
-            "right_eval": self.right_eval,
-            "out_eval": self.out_eval
         }
-
+    
+    """
+    Horner's polynomial evaluation algorithm with modular arithmetic
+    """
+    @staticmethod
+    def __poly_eval_mod(poly_obj, x, mod):
+        coeffs = poly_obj.coeffs
+        
+        res = 0
+        for coeff in coeffs:
+            res = (res * x + int(coeff)) % mod
+        return res
     """
     Returns a random interger between zero and the G1/G2-curve order (exclusive)
     """

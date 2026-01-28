@@ -143,10 +143,12 @@ class TestSetup(unittest.TestCase):
         
         self.assertEqual(left_pairing, right_pairing)
 
-    # Horner's method for polynomial evaluation with modular arithmetic
+    """
+    Horner's method for polynomial evaluation with modular arithmetic
+    """
     @staticmethod
     def poly_eval_mod(poly_obj, x, mod):
-        coeffs = poly_obj.coeffs if hasattr(poly_obj, 'coeffs') else poly_obj
+        coeffs = poly_obj.coeffs
         res = 0
         for coeff in coeffs:
             res = (res * x + int(coeff)) % mod
