@@ -16,7 +16,10 @@ class Setup:
         self,
         out_polys: np.ndarray, # polynomials of the output side of the qap
         left_polys: np.ndarray, # polynomials of the left factor of the qap
-        right_polys: np.ndarray, # polynomials of the right factor of the qap
+        right_polys: np.ndarray, # polynomials of the right factor of the qap,
+        tau=None, # for determinstic tesing
+        alpha=None, # for determinstic tesing
+        beta=None # for determinstic tesing
     ):
         self.out_polys = out_polys
         self.left_polys = left_polys
@@ -24,15 +27,27 @@ class Setup:
         
         ### to be kept private
         # for powers of tau
-        self.tau = self.__get_random_scalar()
+        
+        self.tau = tau if tau is not None else self.__get_random_scalar()
         self.tau_GF = self.GF(self.tau)
 
         # for multiplication with the QAP matrices
-        self.alpha = self.__get_random_scalar()
-        self.beta = self.__get_random_scalar()
+        self.alpha = alpha if alpha is not None else self.__get_random_scalar()
+        self.beta = beta if beta is not None else self.__get_random_scalar()
         ###
 
-        self.poly_degree = len(self.out_polys[0])
+        self.num_polys = len(self.out_polys)
+        
+        # as galois removes zero-coefficients in their poly type,
+        # we must go through all of them to find the maximal degree
+        max_coeff = 1
+        for poly_array in [self.out_polys, self.left_polys, self.right_polys]:
+            for poly in poly_array:
+                max_coeff = max(max_coeff, len(poly.coeffs))
+        
+        self.num_constraints = max_coeff
+        self.poly_degree = self.num_constraints - 1
+
 
         self.g1_srs = self.__get_srs(G1)
         self.g2_srs = self.__get_srs(G2)
@@ -51,8 +66,8 @@ class Setup:
     """
     def __get_srs(self, generator):
         return [
-            multiply(generator, self.tau**i)
-            for i in range(self.poly_degree - 1,-1,-1)
+            multiply(generator, int(pow(self.tau, i, curve_order)))
+            for i in range(self.num_constraints - 1,-1,-1)
         ]
 
     """
@@ -60,50 +75,44 @@ class Setup:
     and returns the srs for it
     """
     def __build_aux_poly(self):
-        t_xs = self.GF(np.arange(1, self.poly_degree + 1))
+        t_xs = self.GF(np.arange(1, self.num_constraints + 1))
         t_tau_GF = np.prod(self.tau_GF - t_xs)
 
         return [
             multiply(G1, int((self.tau_GF**i) * t_tau_GF))
-            for i in range(self.poly_degree - 2, -1, -1)
+            for i in range(self.num_constraints - 2, -1, -1)
         ]
 
     """
     Evaluates the qap polynomials at tau
     """
     def __evaluate_qap_polys(self):
-        left_eval = []
-        right_eval = []
-        out_eval = []
-
-        for i in range(self.poly_degree):
-            val_L = int(np.polyval(self.left_polys[i], self.tau)) % curve_order
-            val_R = int(np.polyval(self.right_polys[i], self.tau)) % curve_order
-            val_O = int(np.polyval(self.out_polys[i], self.tau)) % curve_order
-
-            left_eval.append(val_L)
-            right_eval.append(val_R)
-            out_eval.append(val_O)
-
-        return left_eval, right_eval, out_eval
-
-
-    """
-    Evaluates the QAP's polynomials at tau and constructs
-    their linear combination as corresponding G1 curve point row wise
-    G1(alpha * left_poly_i(tau) + beta * left_poly_i(tau) + out_poly_i(tau))
-    """
-    def __evaluate_qap_psis(self, left_eval, right_eval, out_eval):
-        return [
-            multiply(
-                G1,
-                (self.alpha * right_eval[i] +
-                self.beta  * left_eval[i] +
-                out_eval[i]) % curve_order)
-                for i in range(
-                    self.poly_degree
-                )
-        ]
+        psis = []
+        
+        for i in range(self.num_polys):
+            # Horner's polynomial evaluation algorithm with modular arithmetic
+            def poly_eval_mod(poly_obj, x, mod):
+                # Handle both galois.Poly objects and regular arrays
+                coeffs = poly_obj.coeffs if hasattr(poly_obj, 'coeffs') else poly_obj # => accepts both galois poly objects and np coeff arrays
+                res = 0
+                for coeff in coeffs:
+                    res = (res * x + int(coeff)) % mod
+                return res
+            
+            val_left = poly_eval_mod(self.left_polys[i], self.tau, curve_order)
+            val_right = poly_eval_mod(self.right_polys[i], self.tau, curve_order)
+            val_out = poly_eval_mod(self.out_polys[i], self.tau, curve_order)
+            
+            # Psi_i = (alph*v_i(tau) + beta*u_i(tau) + w_i(tau))G_1
+            combined = (
+                self.alpha * val_right +
+                self.beta * val_left +
+                val_out
+            ) % curve_order
+            
+            psis.append(multiply(G1, combined))
+        
+        return psis
 
     """
     Returns the necesarry parts of the setup for prover and verifier as dict

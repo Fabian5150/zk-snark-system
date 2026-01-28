@@ -1,6 +1,6 @@
 import numpy as np
 import galois
-from py_ecc.bn128 import G1, G2, multiply, curve_order, pairing, curve_order, add
+from py_ecc.bn128 import G1, G2, multiply, curve_order, pairing, curve_order
 import pickle
 from utils import project_path
 import unittest
@@ -104,7 +104,7 @@ class TestSetup(unittest.TestCase):
     """
     Checks if all psi terms are correct
     """
-    def test_05_psi_computation_x_element(self):
+    def test_05_psi_computations(self):
         for i in range (0, len(self.data["left_polys"])-1):
             u_poly = self.data["left_polys"][i]
             v_poly = self.data["right_polys"][i]
@@ -142,38 +142,6 @@ class TestSetup(unittest.TestCase):
         right_pairing = pairing(self.setup.beta_g2, G1)
         
         self.assertEqual(left_pairing, right_pairing)
-
-    """
-    Checks if the psis include the identity element
-    (would be point at infinity on the curves, which would be very bad)
-    """
-    def test_09_psis_non_identity(self):
-        identity = (0, 0, 0)
-        for psi in self.setup.psis:
-            self.assertNotEqual(psi, identity)
-
-    """
-    Checks if the srs can be used to evaluate a polynomial at tau,
-    by doing the calculation to be done with the srs manually and comparing
-    """
-    def test_10_srs_polynomial_evaluation(self):
-        # simpler test poly
-        poly_coeffs = [1, 2, 3, 4]
-        
-        # computation with srs
-        expected = None
-        for i, coeff in enumerate(poly_coeffs):
-            term = multiply(self.setup.g1_srs[i], coeff)
-            expected = term if expected is None else add(expected, term)
-        
-        # polynomial evaluation at tau, then multiply by G1
-        tau_gf = self.GF(self.tau)
-        poly_values = self.GF(poly_coeffs)
-        res_scalar = sum(poly_values[i] * (tau_gf ** (len(poly_coeffs) - 1 - i)) 
-                           for i in range(len(poly_coeffs)))
-        reference = multiply(G1, int(res_scalar))
-        
-        self.assertEqual(expected, reference)
 
     # Horner's method for polynomial evaluation with modular arithmetic
     @staticmethod

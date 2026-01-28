@@ -78,16 +78,6 @@ U_polys = np.apply_along_axis(interpolate_column, 0, L_galois)
 V_polys = np.apply_along_axis(interpolate_column, 0, R_galois)
 W_polys = np.apply_along_axis(interpolate_column, 0, O_galois)
 
-'''
-print(f"""
-    Interpolated Polynoms over the finite field: F_79:
-    Left matrix:   {U_polys}
-    Right matrix:  {V_polys}
-    Output matrix: {W_polys}
-    """
-)
-'''
-
 def get_test_qap():
     return {
         "out_polys": W_polys,
@@ -106,3 +96,7 @@ with open(project_path("test", "qap_data.pkl"), "wb") as f:
         "correct_witness": witness,
         "false_witness": false_witness
     }, f)
+
+if __name__ == "__main__":
+    print(W_polys)
+    print(type(W_polys))
