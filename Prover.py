@@ -1,7 +1,10 @@
 from py_ecc.bn128 import multiply, G1, curve_order, add
 import numpy as np
+import galois
 
 class Prover:
+    GF = galois.GF(curve_order)
+
     """
     Takes as input the witness to prove with,
     aswell as the needed curve scalars,
@@ -9,10 +12,10 @@ class Prover:
     """
     def __init__(
         self,
-        witness: list[int],
-        left_eval,
-        right_eval,
-        out_eval,
+        witness: np.ndarray,
+        left_polys: np.ndarray,
+        right_polys: np.ndarray,
+        out_polys: np.ndarray,
         alpha_g1,
         beta_g2,
         g1_srs,
@@ -21,32 +24,56 @@ class Prover:
         psis,
     ):
         self.witness = witness
+        self.left_polys = left_polys
+        self.right_polys = right_polys
+        self.out_polys = out_polys
+        
+        self.alpha_g1 = alpha_g1
+        self.beta_g2 = beta_g2
         self.g1_srs = g1_srs
         self.g2_srs = g2_srs
         self.t_tau_srs = t_tau_srs
         self.psis = psis
-        self.left_eval = left_eval
-        self.right_eval = right_eval
-        self.out_eval = out_eval
 
-        self.A_1 = self.__compute_AB_point(alpha_g1, g1_srs)
-        self.B_2 = self.__compute_AB_point(beta_g2, g2_srs)
+        self.A_1 = self.__compute_AB(self.alpha_g1, self.g1_srs, self.left_polys)
+        self.B_2 = self.__compute_AB(self.beta_g2, self.g2_srs, self.right_polys)
 
         self.h = self.__compute_h_tau()
         self.C_1 = self.__compute_C_point()
 
     """
-    Can construct both the [A]_1 point (with alpha_g1 and srs_g1)
-    and the [B]_2 point (with beta_g2 and srs_g2)
+    Can construct both the [A]_1 point (with alpha_g1, srs_g1 and left_polys)
+    and the [B]_2 point (with beta_g2, srs_g2 and right_polys)
     """
-    def __compute_AB_point(self, scalar, srs):
-        acc = scalar
-
-        for i, w_val in enumerate(self.witness):
-            term = multiply(srs[i], w_val % curve_order)
-            acc = add(acc, term)
-
-        return acc
+    def __compute_AB(self, scalar, srs, polys):        
+        # Start with zero polynomial
+        res_poly = None
+        
+        for i, witness_val in enumerate(self.witness):
+            poly = polys[i]
+            
+            mul_poly = poly * self.GF(int(witness_val))
+            
+            if res_poly is None:
+                res_poly = mul_poly
+            else:
+                res_poly = res_poly + mul_poly
+        
+        coeffs = res_poly.coeffs
+        
+        srs_len = len(srs)
+        
+        # Pad with 0-coefficients if necessary (galois shortens polynomials with 0-coefficients)
+        if len(coeffs) < srs_len:
+            coeffs = np.concatenate([np.zeros(srs_len - len(coeffs), dtype=coeffs.dtype), coeffs])
+        
+        acc = None
+        for coeff, srs_element in zip(coeffs, srs):
+            term = multiply(srs_element, int(coeff) % curve_order)
+            acc = term if acc is None else add(acc, term)
+        
+        
+        return add(scalar, acc) if acc is not None else scalar
     
     """
     Calculates the value of h(tau)t(tau)
