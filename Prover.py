@@ -38,6 +38,7 @@ class Prover:
         self.A_1 = self.__compute_AB(self.alpha_g1, self.g1_srs, self.left_polys)
         self.B_2 = self.__compute_AB(self.beta_g2, self.g2_srs, self.right_polys)
 
+        self.h_coeffs = self.__compute_h_coeffs()
         self.h = self.__compute_h_tau()
         self.C_1 = self.__compute_C_point()
 
@@ -75,9 +76,44 @@ class Prover:
         
         return add(scalar, acc) if acc is not None else scalar
     
+    def __compute_h_coeffs(self):
+        """
+        Computes sum(witness_i * poly(x)) per given polynomial array
+        """
+        def compute_poly(polys):
+            res_poly = None
+
+            for i, witness_val in enumerate(self.witness):
+                poly = polys[i]
+                scaled = poly * self.GF(int(witness_val))
+                res_poly = scaled if res_poly is None else res_poly + scaled
+
+            return res_poly
+            
+        L_poly = compute_poly(self.left_polys)
+        R_poly = compute_poly(self.right_polys)
+        O_poly = compute_poly(self.out_polys)
+
+        numerator = L_poly * R_poly - O_poly
+        
+        # Compute t(x)
+        num_constraints = len(self.g1_srs)
+        roots = self.GF(np.arange(1, num_constraints + 1))
+        t_poly = galois.Poly([1], field=self.GF)
+
+        for root in roots:
+            t_poly = t_poly * galois.Poly([1, -root], field=self.GF)
+        
+        h_poly, remainder = divmod(numerator, t_poly)
+        
+        # Check for remainer (not 0 => invalid witness)
+        if not np.all(remainder.coeffs == 0):
+            raise ValueError("Invalid witness! (has devision remainder)")
+        
+        return h_poly.coeffs
+
     """
     Calculates the value of h(tau)t(tau)
-    (as h = .../t, t_srs is not needed here, as it disapears)
     """
     def __compute_h_tau(self):
         sum_l = sum(w_val * l_val for w_val, l_val in zip(self.witness, self.left_eval))
