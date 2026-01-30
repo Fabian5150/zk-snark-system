@@ -39,8 +39,7 @@ class Prover:
         self.B_2 = self.__compute_AB(self.beta_g2, self.g2_srs, self.right_polys)
 
         self.h_coeffs = self.__compute_h_coeffs()
-        self.h = self.__compute_h_tau()
-        self.C_1 = self.__compute_C_point()
+        self.C_1 = self.__compute_C()
 
     """
     Can construct both the [A]_1 point (with alpha_g1, srs_g1 and left_polys)
@@ -117,22 +116,43 @@ class Prover:
         return h_poly.coeffs
     
     """
-    Using h, psis from the prover and the witness,
-    computes the [C]_1
+    Computes the C_1 point
     """
-    def __compute_C_point(self):
-        psi_sum_point = None # representing the neutral element on ell. curve ("point at inf")
+    def __compute_C(self):
+        # First term: 
+        psi_sum = None # representing the neutral element on ell. curve ("point at inf")
+        
+        for i, witness_val in enumerate(self.witness):
+            term = multiply(self.psis[i], int(witness_val) % curve_order)
+            psi_sum = term if psi_sum is None else add(psi_sum, term)
+        
+        # Second term:
+        
+        srs_len = len(self.t_tau_srs)
+        
+        # Pad with 0-coefficients if necessary
+        h_coeffs = self.h_coeffs
+        # TODO: Generalize this into a class aux method
+        if len(h_coeffs) < srs_len:
+            h_coeffs = np.concatenate([
+                np.zeros(srs_len - len(h_coeffs), dtype=h_coeffs.dtype), 
+                h_coeffs
+            ])
+        
+        h_t_tau_sum = None
 
-        for psi_point, w_val in zip(self.psis, self.witness):
-            term = multiply(psi_point, w_val % curve_order)
-            psi_sum_point = term if psi_sum_point is None else add(psi_sum_point, term)
-
-        aux_term = multiply(G1, self.h % curve_order)
-
-        C_1 = add(psi_sum_point, aux_term)
-
-        return C_1
-    
+        for coeff, srs_element in zip(h_coeffs, self.t_tau_srs):
+            term = multiply(srs_element, int(coeff) % curve_order)
+            h_t_tau_sum = term if h_t_tau_sum is None else add(h_t_tau_sum, term)
+        
+        # Combine both terms
+        if psi_sum is None:
+            return h_t_tau_sum
+        elif h_t_tau_sum is None:
+            return psi_sum
+        else:
+            return add(psi_sum, h_t_tau_sum)
+        
     """
     Returns the three curve points making up the proof
     """
