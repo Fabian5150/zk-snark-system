@@ -76,6 +76,10 @@ class Prover:
         
         return add(scalar, acc) if acc is not None else scalar
     
+    """
+    Computes the (coefficients of the) h(tau)t(tau) polynimal
+    and checks it's division remainder for validation of witness
+    """
     def __compute_h_coeffs(self):
         """
         Computes sum(witness_i * poly(x)) per given polynomial array
@@ -111,18 +115,6 @@ class Prover:
             raise ValueError("Invalid witness! (has devision remainder)")
         
         return h_poly.coeffs
-
-    """
-    Calculates the value of h(tau)t(tau)
-    """
-    def __compute_h_tau(self):
-        sum_l = sum(w_val * l_val for w_val, l_val in zip(self.witness, self.left_eval))
-        sum_r = sum(w_val * r_val for w_val, r_val in zip(self.witness, self.right_eval))
-        sum_o = sum(w_val * o_val for w_val, o_val in zip(self.witness, self.out_eval))
-
-        res = (sum_l * sum_r - sum_o) % curve_order
-
-        return res
     
     """
     Using h, psis from the prover and the witness,
