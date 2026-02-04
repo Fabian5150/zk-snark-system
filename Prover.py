@@ -22,6 +22,7 @@ class Prover:
         g2_srs,
         t_tau_srs,
         psis,
+        allowFalseWitness = False # True here allows testing the Verifier with a false witness
     ):
         self.witness = witness
         self.left_polys = left_polys
@@ -34,6 +35,8 @@ class Prover:
         self.g2_srs = g2_srs
         self.t_tau_srs = t_tau_srs
         self.psis = psis
+
+        self.allowFalseWitness = allowFalseWitness
 
         self.A_1 = self.__compute_AB(self.alpha_g1, self.g1_srs, self.left_polys)
         self.B_2 = self.__compute_AB(self.beta_g2, self.g2_srs, self.right_polys)
@@ -110,7 +113,7 @@ class Prover:
         h_poly, remainder = divmod(numerator, t_poly)
         
         # Check for remainer (not 0 => invalid witness)
-        if not np.all(remainder.coeffs == 0):
+        if (not self.allowFalseWitness and (not np.all(remainder.coeffs == 0))):
             raise ValueError("Invalid witness! (has devision remainder)")
         
         return h_poly.coeffs

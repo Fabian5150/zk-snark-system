@@ -4,6 +4,11 @@ from py_ecc.bn128 import curve_order
 
 from test.utils import project_path
 
+"""
+Runs the whole proving protocol with the example qap and some
+command line output to follow along
+"""
+
 print("--- Importing Setup, Prover, Verifier ---")
 from Setup import Setup
 from Prover import Prover
